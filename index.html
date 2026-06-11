@@ -420,10 +420,16 @@ async function saveLead() {
   closeModal();
   setSyncStatus('loading');
   if (editId) {
-    const l = leads.find(x=>String(x.id)===String(editId));
-    if (l) { Object.assign(l, data); data.id = editId; }
+    data.id = editId;
     const res = await apiUpdate(data);
-    setSyncStatus(res && res.success ? 'ok' : 'error');
+    if (res && res.success) {
+      const l = leads.find(x=>String(x.id)===String(editId));
+      if (l) Object.assign(l, data);
+      setSyncStatus('ok');
+    } else {
+      setSyncStatus('error');
+      alert('⚠️ Erro ao salvar edição: ' + (res && res.error ? res.error : 'falha desconhecida') + '\n\nA alteração NÃO foi salva na planilha. Tente novamente.');
+    }
   } else {
     const res = await apiCreate(data);
     if (res && res.duplicate) {
