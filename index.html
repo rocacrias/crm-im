@@ -232,14 +232,12 @@ let selectedId = null;
 let editId = null;
 let API_URL = localStorage.getItem('crm_api_url') || '';
 
-// ---- API ----
-async function apiFetch(method, body) {
+// ---- API (usa GET com parâmetros para evitar CORS) ----
+async function apiGet(params) {
   if (!API_URL) return null;
   try {
-    const opts = { method, headers: { 'Content-Type': 'application/json' } };
-    if (body) opts.body = JSON.stringify(body);
-    const url = method === 'GET' ? API_URL : API_URL;
-    const res = await fetch(url, opts);
+    const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    const res = await fetch(`${API_URL}?${qs}`);
     return await res.json();
   } catch(e) {
     return { error: e.message };
@@ -252,13 +250,9 @@ async function loadLeads() {
     leads = getSampleLeads();
     setSyncStatus('demo');
   } else {
-    const data = await apiFetch('GET');
+    const data = await apiGet({ action: 'list' });
     if (data && data.leads) {
-      leads = data.leads.map(l => ({
-        id: l.ID, nome: l.Nome, tel: l.Telefone,
-        estado: l.Estado, origem: l.Origem,
-        interesse: l.Interesse, status: l.Status
-      }));
+      leads = data.leads;
       setSyncStatus('ok');
     } else {
       leads = getSampleLeads();
@@ -272,17 +266,17 @@ async function loadLeads() {
 
 async function apiCreate(lead) {
   if (!API_URL) return { id: 'local_' + Date.now() };
-  return apiFetch('POST', { action: 'create', lead });
+  return apiGet({ action: 'create', lead: JSON.stringify(lead) });
 }
 
 async function apiUpdate(lead) {
   if (!API_URL) return { success: true };
-  return apiFetch('POST', { action: 'update', lead });
+  return apiGet({ action: 'update', lead: JSON.stringify(lead) });
 }
 
 async function apiDelete(id) {
   if (!API_URL) return { success: true };
-  return apiFetch('POST', { action: 'delete', id });
+  return apiGet({ action: 'delete', id });
 }
 
 function setSyncStatus(state) {
