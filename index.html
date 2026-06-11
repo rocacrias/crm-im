@@ -252,7 +252,15 @@ async function loadLeads() {
   } else {
     const data = await apiGet({ action: 'list' });
     if (data && data.leads) {
-      leads = data.leads;
+      leads = data.leads.map(l => ({
+        id:        l.id,
+        nome:      l.nome,
+        tel:       l.tel,
+        estado:    l.estado || '',
+        origem:    l.origem || '',
+        interesse: l.interesse || '',
+        status:    l.status || 'Novo'
+      }));
       setSyncStatus('ok');
     } else {
       leads = getSampleLeads();
@@ -521,3 +529,4 @@ loadLeads();
 </script>
 </body>
 </html>
+
