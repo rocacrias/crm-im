@@ -325,7 +325,7 @@ function getFiltered() {
   const fi = document.getElementById('f-interesse').value;
   const fs = document.getElementById('f-status').value;
   const fc = document.getElementById('f-canal').value;
-  return leads.filter(l=>(!fe||l.estado===fe)&&(!fi||l.interesse===fi)&&(!fs||l.status===fs)&&(!fc||(l.canal||'Online')===fc));
+  return leads.filter(l=>(!fe||l.estado===fe)&&(!fi||l.interesse===fi)&&(!fs||l.status===fs)&&(!fc||(l.canal||'Offline')===fc));
 }
 
 function renderMiniMetrics() {
@@ -362,7 +362,7 @@ function renderLeads() {
             <span class="tag">${l.estado}</span>
             <span class="tag">${l.origem}</span>
             <span class="tag" title="Especificação do lead">${l.interesse||'—'}</span>
-            <span class="${(l.canal||'Online')==='Offline'?'tag-offline':'tag-online'}">${(l.canal||'Online')==='Offline'?'🔴 Offline':'🟢 Online'}</span>
+            <span class="${(l.canal||'Offline')==='Offline'?'tag-offline':'tag-online'}">${(l.canal||'Offline')==='Offline'?'🔴 Offline':'🟢 Online'}</span>
           </div>
         </div>
         <span class="badge ${bc}">${l.status}</span>
@@ -513,7 +513,7 @@ async function testApi() {
 
 function exportCSV() {
   const headers = ['ID','Nome','Telefone','Estado','Origem','Interesse','Status','Canal'];
-  const rows = leads.map(l=>[l.id,l.nome,l.tel,l.estado,l.origem,l.interesse,l.status,l.canal||'Online'].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const rows = leads.map(l=>[l.id,l.nome,l.tel,l.estado,l.origem,l.interesse,l.status,l.canal||'Offline'].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','),...rows].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
