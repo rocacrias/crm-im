@@ -419,7 +419,7 @@ async function saveLead() {
   const data = { nome, tel:document.getElementById('f-tel').value, estado:document.getElementById('f-est').value, origem:document.getElementById('f-orig').value, interesse:document.getElementById('f-int').value.trim(), status:document.getElementById('f-stat').value, canal:document.getElementById('f-canal-modal').value };
   closeModal();
   setSyncStatus('loading');
-  if (editId) {
+  if (editId !== null && editId !== undefined && editId !== '') {
     data.id = editId;
     const res = await apiUpdate(data);
     if (res && res.success) {
