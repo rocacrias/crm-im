@@ -219,7 +219,7 @@ select:focus, input:focus { border-color: var(--blue); }
         <select id="f-stat"><option>Novo</option><option>Contatado</option><option>Interessado</option><option>Não Interessado</option><option>Retornar</option><option>Número Inválido</option></select>
       </div>
       <div class="form-group"><label>Canal</label>
-        <select id="f-canal-modal"><option>Online</option><option>Offline</option></select>
+        <select id="f-canal-modal"><option>Offline</option><option>Online</option></select>
       </div>
     </div>
     <div class="modal-footer">
@@ -268,7 +268,7 @@ async function loadLeads() {
         origem:    l.origem || '',
         interesse: l.interesse || '',
         status:    l.status || 'Novo',
-        canal:     l.canal || 'Online'
+        canal:     l.canal || 'Offline'
       }));
       setSyncStatus('ok');
     } else {
@@ -395,7 +395,7 @@ function clearFilters() {
 }
 
 // ---- Modal ----
-function openModal() { editId=null; document.getElementById('modal-title').textContent='Novo lead'; document.getElementById('f-canal-modal').value='Online'; document.getElementById('modal').classList.add('open'); }
+function openModal() { editId=null; document.getElementById('modal-title').textContent='Novo lead'; document.getElementById('f-canal-modal').value='Offline'; document.getElementById('modal').classList.add('open'); }
 function closeModal() { document.getElementById('modal').classList.remove('open'); editId=null; }
 
 function editLead(id) {
@@ -409,7 +409,7 @@ function editLead(id) {
   document.getElementById('f-orig').value = l.origem;
   document.getElementById('f-int').value = l.interesse;
   document.getElementById('f-stat').value = l.status;
-  document.getElementById('f-canal-modal').value = l.canal || 'Online';
+  document.getElementById('f-canal-modal').value = l.canal || 'Offline';
   document.getElementById('modal').classList.add('open');
 }
 
@@ -546,5 +546,6 @@ loadLeads();
 </script>
 </body>
 </html>
+
 
 
