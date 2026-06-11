@@ -61,6 +61,8 @@ select:focus, input:focus { border-color: var(--blue); }
 .lead-name { font-size: 14px; font-weight: 500; }
 .lead-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; }
 .tag { background: var(--bg); border: 0.5px solid var(--border); border-radius: 20px; padding: 2px 8px; font-size: 11px; color: var(--muted); }
+.tag-online { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-border); border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight:600; }
+.tag-offline { background: var(--gray-bg); color: var(--gray-text); border: 0.5px solid var(--gray-border); border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight:600; }
 .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
 .b-novo { background: var(--blue-bg); color: var(--blue); }
 .b-contatado { background: var(--amber-bg); color: var(--amber); }
@@ -133,6 +135,7 @@ select:focus, input:focus { border-color: var(--blue); }
       <select id="f-estado" onchange="renderLeads()"><option value="">Todos os estados</option></select>
       <select id="f-interesse" onchange="renderLeads()"><option value="">Todos os interesses</option></select>
       <select id="f-status" onchange="renderLeads()"><option value="">Todos os status</option></select>
+      <select id="f-canal" onchange="renderLeads()"><option value="">Online/Offline</option><option value="Online">Online</option><option value="Offline">Offline</option></select>
       <button class="btn" onclick="clearFilters()">✕ Limpar</button>
       <button class="btn primary" onclick="openModal()">+ Novo lead</button>
       <span class="count-label" id="count-label"></span>
@@ -207,12 +210,17 @@ select:focus, input:focus { border-color: var(--blue); }
       <div class="form-group"><label>Origem</label>
         <select id="f-orig"><option>Instagram</option><option>Facebook</option><option>Google</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Outro</option></select>
       </div>
-      <div class="form-group"><label>Interesse</label>
-        <select id="f-int"><option>Produto A</option><option>Produto B</option><option>Serviço</option><option>Consultoria</option><option>Outro</option></select>
+      <div class="form-group"><label>Especificação do lead</label>
+        <input type="text" id="f-int" placeholder="Ex: Constelação familiar, Plano X..." />
       </div>
     </div>
-    <div class="form-group"><label>Status</label>
-      <select id="f-stat"><option>Novo</option><option>Contatado</option><option>Interessado</option><option>Não Interessado</option><option>Retornar</option><option>Número Inválido</option></select>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label>
+        <select id="f-stat"><option>Novo</option><option>Contatado</option><option>Interessado</option><option>Não Interessado</option><option>Retornar</option><option>Número Inválido</option></select>
+      </div>
+      <div class="form-group"><label>Canal</label>
+        <select id="f-canal-modal"><option>Online</option><option>Offline</option></select>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal()">Cancelar</button>
@@ -259,7 +267,8 @@ async function loadLeads() {
         estado:    l.estado || '',
         origem:    l.origem || '',
         interesse: l.interesse || '',
-        status:    l.status || 'Novo'
+        status:    l.status || 'Novo',
+        canal:     l.canal || 'Online'
       }));
       setSyncStatus('ok');
     } else {
@@ -315,7 +324,8 @@ function getFiltered() {
   const fe = document.getElementById('f-estado').value;
   const fi = document.getElementById('f-interesse').value;
   const fs = document.getElementById('f-status').value;
-  return leads.filter(l=>(!fe||l.estado===fe)&&(!fi||l.interesse===fi)&&(!fs||l.status===fs));
+  const fc = document.getElementById('f-canal').value;
+  return leads.filter(l=>(!fe||l.estado===fe)&&(!fi||l.interesse===fi)&&(!fs||l.status===fs)&&(!fc||(l.canal||'Online')===fc));
 }
 
 function renderMiniMetrics() {
@@ -351,7 +361,8 @@ function renderLeads() {
             <span>📞 ${l.tel}</span>
             <span class="tag">${l.estado}</span>
             <span class="tag">${l.origem}</span>
-            <span class="tag">${l.interesse}</span>
+            <span class="tag" title="Especificação do lead">${l.interesse||'—'}</span>
+            <span class="${(l.canal||'Online')==='Offline'?'tag-offline':'tag-online'}">${(l.canal||'Online')==='Offline'?'🔴 Offline':'🟢 Online'}</span>
           </div>
         </div>
         <span class="badge ${bc}">${l.status}</span>
@@ -379,12 +390,12 @@ async function setStatus(id, status) {
 }
 
 function clearFilters() {
-  ['f-estado','f-interesse','f-status'].forEach(id => document.getElementById(id).value = '');
+  ['f-estado','f-interesse','f-status','f-canal'].forEach(id => document.getElementById(id).value = '');
   renderLeads();
 }
 
 // ---- Modal ----
-function openModal() { editId=null; document.getElementById('modal-title').textContent='Novo lead'; document.getElementById('modal').classList.add('open'); }
+function openModal() { editId=null; document.getElementById('modal-title').textContent='Novo lead'; document.getElementById('f-canal-modal').value='Online'; document.getElementById('modal').classList.add('open'); }
 function closeModal() { document.getElementById('modal').classList.remove('open'); editId=null; }
 
 function editLead(id) {
@@ -398,13 +409,14 @@ function editLead(id) {
   document.getElementById('f-orig').value = l.origem;
   document.getElementById('f-int').value = l.interesse;
   document.getElementById('f-stat').value = l.status;
+  document.getElementById('f-canal-modal').value = l.canal || 'Online';
   document.getElementById('modal').classList.add('open');
 }
 
 async function saveLead() {
   const nome = document.getElementById('f-nome').value.trim();
   if (!nome) { alert('Informe o nome.'); return; }
-  const data = { nome, tel:document.getElementById('f-tel').value, estado:document.getElementById('f-est').value, origem:document.getElementById('f-orig').value, interesse:document.getElementById('f-int').value, status:document.getElementById('f-stat').value };
+  const data = { nome, tel:document.getElementById('f-tel').value, estado:document.getElementById('f-est').value, origem:document.getElementById('f-orig').value, interesse:document.getElementById('f-int').value.trim(), status:document.getElementById('f-stat').value, canal:document.getElementById('f-canal-modal').value };
   closeModal();
   setSyncStatus('loading');
   if (editId) {
@@ -414,6 +426,11 @@ async function saveLead() {
     setSyncStatus(res && res.success ? 'ok' : 'error');
   } else {
     const res = await apiCreate(data);
+    if (res && res.duplicate) {
+      alert('⚠️ Já existe um lead com esse número de telefone. Verifique a lista.');
+      setSyncStatus('ok');
+      return;
+    }
     const newId = (res && res.id) ? res.id : ('local_' + Date.now());
     leads.unshift({ id: newId, ...data });
     setSyncStatus(res && res.id ? 'ok' : (API_URL ? 'error' : 'demo'));
@@ -489,8 +506,8 @@ async function testApi() {
 }
 
 function exportCSV() {
-  const headers = ['ID','Nome','Telefone','Estado','Origem','Interesse','Status'];
-  const rows = leads.map(l=>[l.id,l.nome,l.tel,l.estado,l.origem,l.interesse,l.status].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const headers = ['ID','Nome','Telefone','Estado','Origem','Interesse','Status','Canal'];
+  const rows = leads.map(l=>[l.id,l.nome,l.tel,l.estado,l.origem,l.interesse,l.status,l.canal||'Online'].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','),...rows].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
@@ -515,11 +532,11 @@ function switchTab(tab, el) {
 // ---- Sample data ----
 function getSampleLeads() {
   return [
-    {id:'s1',nome:'Ana Paula Costa',tel:'(85) 98877-1234',estado:'CE',origem:'Instagram',interesse:'Produto A',status:'Interessado'},
-    {id:'s2',nome:'Bruno Ferreira',tel:'(11) 97766-5678',estado:'SP',origem:'Google',interesse:'Consultoria',status:'Novo'},
-    {id:'s3',nome:'Carla Mendes',tel:'(21) 96655-4321',estado:'RJ',origem:'Indicação',interesse:'Produto B',status:'Contatado'},
-    {id:'s4',nome:'Diego Alves',tel:'(31) 95544-9876',estado:'MG',origem:'Facebook',interesse:'Serviço',status:'Retornar'},
-    {id:'s5',nome:'Eduarda Lima',tel:'(81) 94433-1111',estado:'PE',origem:'WhatsApp',interesse:'Produto A',status:'Não Interessado'},
+    {id:'s1',nome:'Ana Paula Costa',tel:'(85) 98877-1234',estado:'CE',origem:'Instagram',interesse:'Produto A',status:'Interessado',canal:'Online'},
+    {id:'s2',nome:'Bruno Ferreira',tel:'(11) 97766-5678',estado:'SP',origem:'Google',interesse:'Consultoria',status:'Novo',canal:'Offline'},
+    {id:'s3',nome:'Carla Mendes',tel:'(21) 96655-4321',estado:'RJ',origem:'Indicação',interesse:'Produto B',status:'Contatado',canal:'Online'},
+    {id:'s4',nome:'Diego Alves',tel:'(31) 95544-9876',estado:'MG',origem:'Facebook',interesse:'Serviço',status:'Retornar',canal:'Offline'},
+    {id:'s5',nome:'Eduarda Lima',tel:'(81) 94433-1111',estado:'PE',origem:'WhatsApp',interesse:'Produto A',status:'Não Interessado',canal:'Online'},
   ];
 }
 
@@ -529,4 +546,5 @@ loadLeads();
 </script>
 </body>
 </html>
+
 
