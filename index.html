@@ -428,7 +428,8 @@ async function saveLead() {
       setSyncStatus('ok');
     } else {
       setSyncStatus('error');
-      alert('⚠️ Erro ao salvar edição: ' + (res && res.error ? res.error : 'falha desconhecida') + '\n\nA alteração NÃO foi salva na planilha. Tente novamente.');
+      console.error('Update falhou. editId=', editId, 'resposta=', res);
+      alert('⚠️ Erro ao salvar edição.\n\neditId: ' + editId + '\nResposta da API: ' + JSON.stringify(res) + '\n\nA alteração NÃO foi salva na planilha.');
     }
   } else {
     const res = await apiCreate(data);
@@ -552,6 +553,7 @@ loadLeads();
 </script>
 </body>
 </html>
+
 
 
 
