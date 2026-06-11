@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CRM de Leads</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f8f8f6;
+  --surface: #ffffff;
+  --border: #e5e4e0;
+  --border-hover: #c8c7c2;
+  --text: #1a1a18;
+  --muted: #6b6b68;
+  --hint: #a0a09c;
+  --blue-bg: #e8f0fb; --blue: #1a5fc8; --blue-border: #b0c8f0;
+  --green-bg: #e8f5ee; --green: #1d7a4a; --green-border: #a8dfc0;
+  --amber-bg: #fef3e2; --amber: #9a6200; --amber-border: #f5d080;
+  --red-bg: #fdeaea; --red: #b02020; --red-border: #f0b0b0;
+  --purple-bg: #f0eefe; --purple: #5340c0; --purple-border: #ccc6f8;
+  --gray-bg: #f2f1ed; --gray-text: #5a5a56; --gray-border: #d0cfc8;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; min-height: 100vh; }
+.app { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+header h1 { font-size: 20px; font-weight: 600; }
+.sync-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #22a060; flex-shrink: 0; }
+.sync-dot.error { background: var(--red); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+.tab { padding: 9px 18px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+@media(max-width:600px){ .metrics { grid-template-columns: repeat(2,1fr); } }
+.metric { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.metric-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.metric-value { font-size: 28px; font-weight: 600; line-height: 1; }
+.metric-value.blue { color: var(--blue); }
+.metric-value.green { color: var(--green); }
+.metric-value.red { color: var(--red); }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+select, input[type=text] { font-size: 13px; padding: 7px 10px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--surface); color: var(--text); outline: none; }
+select:focus, input:focus { border-color: var(--blue); }
+.btn { font-size: 13px; padding: 7px 14px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: background .15s; white-space: nowrap; }
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--text); color: var(--surface); border-color: var(--text); }
+.btn.primary:hover { opacity: .85; }
+.btn.danger { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+.count-label { font-size: 12px; color: var(--muted); margin-left: auto; line-height: 32px; }
+.leads-list { display: flex; flex-direction: column; gap: 8px; }
+.lead-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: border-color .15s; }
+.lead-card:hover { border-color: var(--border-hover); }
+.lead-card.open { border-color: var(--blue); }
+.lead-row { display: flex; align-items: center; gap: 12px; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--blue-bg); color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.lead-info { flex: 1; min-width: 0; }
+.lead-name { font-size: 14px; font-weight: 500; }
+.lead-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; }
+.tag { background: var(--bg); border: 0.5px solid var(--border); border-radius: 20px; padding: 2px 8px; font-size: 11px; color: var(--muted); }
+.badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.b-novo { background: var(--blue-bg); color: var(--blue); }
+.b-contatado { background: var(--amber-bg); color: var(--amber); }
+.b-interessado { background: var(--green-bg); color: var(--green); }
+.b-nao { background: var(--red-bg); color: var(--red); }
+.b-retornar { background: var(--purple-bg); color: var(--purple); }
+.b-invalido { background: var(--gray-bg); color: var(--gray-text); }
+.actions-grid { margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--border); display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.action-btn { padding: 10px 6px; font-size: 12px; font-weight: 500; border-radius: var(--radius-sm); border: 0.5px solid; cursor: pointer; text-align: center; transition: opacity .15s; }
+.action-btn:hover { opacity: .75; }
+.a-novo { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-border); }
+.a-contatado { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+.a-interessado { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+.a-nao { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+.a-retornar { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-border); }
+.a-invalido { background: var(--gray-bg); color: var(--gray-text); border-color: var(--gray-border); }
+.a-edit { background: var(--surface); color: var(--muted); border-color: var(--border); }
+.a-delete { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+.empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 14px; }
+.loader { text-align: center; padding: 2rem; color: var(--muted); font-size: 14px; }
+/* modal */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+.overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 1.5rem; width: 420px; max-width: 100%; }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-group { margin-bottom: 12px; }
+.form-group label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+.form-group input, .form-group select { width: 100%; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
+/* dashboard */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+@media(max-width:500px){ .dash-grid { grid-template-columns: 1fr; } }
+.dash-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+.dash-card h4 { font-size: 13px; font-weight: 500; margin-bottom: 12px; color: var(--muted); }
+.bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.bar-label { font-size: 12px; color: var(--muted); width: 120px; text-align: right; flex-shrink: 0; }
+.bar-track { flex: 1; background: var(--bg); border-radius: 4px; height: 16px; overflow: hidden; }
+.bar-fill { height: 16px; border-radius: 4px; transition: width .4s; }
+.bar-count { font-size: 12px; font-weight: 500; width: 22px; }
+/* config */
+.config-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.config-card h4 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.config-card p { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.6; }
+.config-card ol { font-size: 13px; color: var(--muted); padding-left: 1.25rem; line-height: 2; }
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; }
+#api-status { font-size: 12px; margin-top: 6px; }
+.ok { color: var(--green); }
+.err { color: var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>CRM de Leads</h1>
+    <div class="sync-pill"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">Verificando...</span></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('leads',this)">Leads</button>
+    <button class="tab" onclick="switchTab('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="switchTab('config',this)">Configuração</button>
+  </div>
+
+  <!-- LEADS -->
+  <div id="view-leads">
+    <div class="metrics" id="mini-metrics"></div>
+    <div class="toolbar">
+      <select id="f-estado" onchange="renderLeads()"><option value="">Todos os estados</option></select>
+      <select id="f-interesse" onchange="renderLeads()"><option value="">Todos os interesses</option></select>
+      <select id="f-status" onchange="renderLeads()"><option value="">Todos os status</option></select>
+      <button class="btn" onclick="clearFilters()">✕ Limpar</button>
+      <button class="btn primary" onclick="openModal()">+ Novo lead</button>
+      <span class="count-label" id="count-label"></span>
+    </div>
+    <div class="leads-list" id="leads-list"><div class="loader">Carregando leads...</div></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" style="display:none">
+    <div class="dash-grid" id="dash-metrics"></div>
+    <div class="dash-card" style="margin-bottom:12px">
+      <h4>Distribuição por status</h4>
+      <div id="bar-status"></div>
+    </div>
+    <div class="dash-card">
+      <h4>Leads por origem</h4>
+      <div id="bar-origem"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="view-config" style="display:none">
+    <div class="config-card">
+      <h4>🔗 URL da API (Apps Script)</h4>
+      <p>Siga os passos no arquivo <strong>Codigo_Apps_Script.gs</strong> para gerar a URL da sua API, depois cole aqui:</p>
+      <div class="input-row">
+        <input type="text" id="api-url" placeholder="https://script.google.com/macros/s/.../exec" />
+        <button class="btn primary" onclick="saveApiUrl()">Salvar</button>
+        <button class="btn" onclick="testApi()">Testar</button>
+      </div>
+      <div id="api-status"></div>
+    </div>
+    <div class="config-card">
+      <h4>📋 Como configurar</h4>
+      <ol>
+        <li>Abra sua planilha no Google Sheets</li>
+        <li>Clique em <strong>Extensões &gt; Apps Script</strong></li>
+        <li>Cole o conteúdo do arquivo <strong>Codigo_Apps_Script.gs</strong></li>
+        <li>Salve e clique em <strong>Implantar &gt; Nova implantação</strong></li>
+        <li>Tipo: <strong>App da Web</strong> | Acesso: <strong>Qualquer pessoa</strong></li>
+        <li>Copie a URL gerada e cole acima</li>
+      </ol>
+    </div>
+    <div class="config-card">
+      <h4>📤 Exportar leads (CSV)</h4>
+      <p>Baixe todos os leads em formato CSV para importar em outra ferramenta.</p>
+      <button class="btn" onclick="exportCSV()">⬇ Baixar CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Novo lead</h3>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:1/-1"><label>Nome completo</label><input type="text" id="f-nome" placeholder="Ex: João Silva" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Telefone</label><input type="text" id="f-tel" placeholder="(85) 99999-0000" /></div>
+      <div class="form-group"><label>Estado</label>
+        <select id="f-est">
+          <option>AC</option><option>AL</option><option>AM</option><option>BA</option><option selected>CE</option>
+          <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option>
+          <option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+          <option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option>
+          <option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>SP</option><option>TO</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Origem</label>
+        <select id="f-orig"><option>Instagram</option><option>Facebook</option><option>Google</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Outro</option></select>
+      </div>
+      <div class="form-group"><label>Interesse</label>
+        <select id="f-int"><option>Produto A</option><option>Produto B</option><option>Serviço</option><option>Consultoria</option><option>Outro</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="f-stat"><option>Novo</option><option>Contatado</option><option>Interessado</option><option>Não Interessado</option><option>Retornar</option><option>Número Inválido</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveLead()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUS = ['Novo','Contatado','Interessado','Não Interessado','Retornar','Número Inválido'];
+const STATUS_CLS = ['a-novo','a-contatado','a-interessado','a-nao','a-retornar','a-invalido'];
+const BADGE_CLS  = ['b-novo','b-contatado','b-interessado','b-nao','b-retornar','b-invalido'];
+const BAR_COLORS = ['#b0c8f0','#f5d080','#a8dfc0','#f0b0b0','#ccc6f8','#d0cfc8'];
+
+let leads = [];
+let selectedId = null;
+let editId = null;
+let API_URL = localStorage.getItem('crm_api_url') || '';
+
+// ---- API ----
+async function apiFetch(method, body) {
+  if (!API_URL) return null;
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const url = method === 'GET' ? API_URL : API_URL;
+    const res = await fetch(url, opts);
+    return await res.json();
+  } catch(e) {
+    return { error: e.message };
+  }
+}
+
+async function loadLeads() {
+  setSyncStatus('loading');
+  if (!API_URL) {
+    leads = getSampleLeads();
+    setSyncStatus('demo');
+  } else {
+    const data = await apiFetch('GET');
+    if (data && data.leads) {
+      leads = data.leads.map(l => ({
+        id: l.ID, nome: l.Nome, tel: l.Telefone,
+        estado: l.Estado, origem: l.Origem,
+        interesse: l.Interesse, status: l.Status
+      }));
+      setSyncStatus('ok');
+    } else {
+      leads = getSampleLeads();
+      setSyncStatus('error');
+    }
+  }
+  populateFilters();
+  renderMiniMetrics();
+  renderLeads();
+}
+
+async function apiCreate(lead) {
+  if (!API_URL) return { id: 'local_' + Date.now() };
+  return apiFetch('POST', { action: 'create', lead });
+}
+
+async function apiUpdate(lead) {
+  if (!API_URL) return { success: true };
+  return apiFetch('POST', { action: 'update', lead });
+}
+
+async function apiDelete(id) {
+  if (!API_URL) return { success: true };
+  return apiFetch('POST', { action: 'delete', id });
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  if (state === 'ok') { dot.className='sync-dot'; label.textContent='Sincronizado com Sheets'; }
+  else if (state === 'loading') { dot.className='sync-dot'; dot.style.background='#f5a623'; label.textContent='Sincronizando...'; }
+  else if (state === 'error') { dot.className='sync-dot error'; label.textContent='Erro na conexão'; }
+  else if (state === 'demo') { dot.className='sync-dot'; dot.style.background='#a0a09c'; label.textContent='Modo demonstração (sem API)'; }
+}
+
+// ---- Renders ----
+function initials(n){ return (n||'?').split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase(); }
+
+function populateFilters() {
+  const estados = [...new Set(leads.map(l=>l.estado))].sort();
+  const interesses = [...new Set(leads.map(l=>l.interesse))].sort();
+  const sel_e = document.getElementById('f-estado');
+  const sel_i = document.getElementById('f-interesse');
+  const sel_s = document.getElementById('f-status');
+  const [ce, ci, cs] = [sel_e.value, sel_i.value, sel_s.value];
+  sel_e.innerHTML = '<option value="">Todos os estados</option>' + estados.map(e=>`<option${ce===e?' selected':''}>${e}</option>`).join('');
+  sel_i.innerHTML = '<option value="">Todos os interesses</option>' + interesses.map(i=>`<option${ci===i?' selected':''}>${i}</option>`).join('');
+  sel_s.innerHTML = '<option value="">Todos os status</option>' + STATUS.map(s=>`<option${cs===s?' selected':''}>${s}</option>`).join('');
+}
+
+function getFiltered() {
+  const fe = document.getElementById('f-estado').value;
+  const fi = document.getElementById('f-interesse').value;
+  const fs = document.getElementById('f-status').value;
+  return leads.filter(l=>(!fe||l.estado===fe)&&(!fi||l.interesse===fi)&&(!fs||l.status===fs));
+}
+
+function renderMiniMetrics() {
+  const total = leads.length;
+  const int = leads.filter(l=>l.status==='Interessado').length;
+  const nao = leads.filter(l=>l.status==='Não Interessado').length;
+  const taxa = total ? Math.round(int/total*100) : 0;
+  document.getElementById('mini-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Total de leads</div><div class="metric-value">${total}</div></div>
+    <div class="metric"><div class="metric-label">Interessados</div><div class="metric-value green">${int}</div></div>
+    <div class="metric"><div class="metric-label">Não interessados</div><div class="metric-value red">${nao}</div></div>
+    <div class="metric"><div class="metric-label">Taxa de conversão</div><div class="metric-value blue">${taxa}%</div></div>
+  `;
+}
+
+function renderLeads() {
+  const filtered = getFiltered();
+  document.getElementById('count-label').textContent = `${filtered.length} de ${leads.length} leads`;
+  if (!filtered.length) {
+    document.getElementById('leads-list').innerHTML = '<div class="empty">Nenhum lead encontrado para os filtros aplicados.</div>';
+    return;
+  }
+  document.getElementById('leads-list').innerHTML = filtered.map(l => {
+    const si = STATUS.indexOf(l.status);
+    const bc = BADGE_CLS[si] || 'b-novo';
+    const isOpen = selectedId === l.id;
+    return `<div class="lead-card${isOpen?' open':''}" onclick="toggleCard('${l.id}')">
+      <div class="lead-row">
+        <div class="avatar">${initials(l.nome)}</div>
+        <div class="lead-info">
+          <div class="lead-name">${l.nome}</div>
+          <div class="lead-meta">
+            <span>📞 ${l.tel}</span>
+            <span class="tag">${l.estado}</span>
+            <span class="tag">${l.origem}</span>
+            <span class="tag">${l.interesse}</span>
+          </div>
+        </div>
+        <span class="badge ${bc}">${l.status}</span>
+      </div>
+      ${isOpen ? `<div class="actions-grid">
+        ${STATUS.map((s,i)=>`<button class="action-btn ${STATUS_CLS[i]}" onclick="event.stopPropagation();setStatus('${l.id}','${s}')">${s}</button>`).join('')}
+        <button class="action-btn a-edit" onclick="event.stopPropagation();editLead('${l.id}')">✏️ Editar</button>
+        <button class="action-btn a-delete" onclick="event.stopPropagation();confirmDelete('${l.id}')">🗑 Excluir</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(id){ selectedId = selectedId===id ? null : id; renderLeads(); }
+
+async function setStatus(id, status) {
+  const l = leads.find(x=>String(x.id)===String(id));
+  if (!l) return;
+  l.status = status;
+  renderLeads(); renderMiniMetrics();
+  setSyncStatus('loading');
+  const res = await apiUpdate(l);
+  setSyncStatus(res && res.success ? 'ok' : 'error');
+  if (document.getElementById('view-dashboard').style.display !== 'none') renderDash();
+}
+
+function clearFilters() {
+  ['f-estado','f-interesse','f-status'].forEach(id => document.getElementById(id).value = '');
+  renderLeads();
+}
+
+// ---- Modal ----
+function openModal() { editId=null; document.getElementById('modal-title').textContent='Novo lead'; document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); editId=null; }
+
+function editLead(id) {
+  const l = leads.find(x=>String(x.id)===String(id));
+  if (!l) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Editar lead';
+  document.getElementById('f-nome').value = l.nome;
+  document.getElementById('f-tel').value = l.tel;
+  document.getElementById('f-est').value = l.estado;
+  document.getElementById('f-orig').value = l.origem;
+  document.getElementById('f-int').value = l.interesse;
+  document.getElementById('f-stat').value = l.status;
+  document.getElementById('modal').classList.add('open');
+}
+
+async function saveLead() {
+  const nome = document.getElementById('f-nome').value.trim();
+  if (!nome) { alert('Informe o nome.'); return; }
+  const data = { nome, tel:document.getElementById('f-tel').value, estado:document.getElementById('f-est').value, origem:document.getElementById('f-orig').value, interesse:document.getElementById('f-int').value, status:document.getElementById('f-stat').value };
+  closeModal();
+  setSyncStatus('loading');
+  if (editId) {
+    const l = leads.find(x=>String(x.id)===String(editId));
+    if (l) { Object.assign(l, data); data.id = editId; }
+    const res = await apiUpdate(data);
+    setSyncStatus(res && res.success ? 'ok' : 'error');
+  } else {
+    const res = await apiCreate(data);
+    const newId = (res && res.id) ? res.id : ('local_' + Date.now());
+    leads.unshift({ id: newId, ...data });
+    setSyncStatus(res && res.id ? 'ok' : (API_URL ? 'error' : 'demo'));
+  }
+  populateFilters(); renderLeads(); renderMiniMetrics();
+  if (document.getElementById('view-dashboard').style.display !== 'none') renderDash();
+}
+
+async function confirmDelete(id) {
+  if (!confirm('Excluir este lead?')) return;
+  leads = leads.filter(x=>String(x.id)!==String(id));
+  if (String(selectedId)===String(id)) selectedId=null;
+  renderLeads(); renderMiniMetrics(); populateFilters();
+  setSyncStatus('loading');
+  const res = await apiDelete(id);
+  setSyncStatus(res && res.success ? 'ok' : 'error');
+}
+
+// ---- Dashboard ----
+function renderDash() {
+  const total = leads.length;
+  const int = leads.filter(l=>l.status==='Interessado').length;
+  const nao = leads.filter(l=>l.status==='Não Interessado').length;
+  const taxa = total ? Math.round(int/total*100) : 0;
+  const retornar = leads.filter(l=>l.status==='Retornar').length;
+  document.getElementById('dash-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Total de leads</div><div class="metric-value">${total}</div></div>
+    <div class="metric"><div class="metric-label">Interessados</div><div class="metric-value green">${int}</div></div>
+    <div class="metric"><div class="metric-label">Não interessados</div><div class="metric-value red">${nao}</div></div>
+    <div class="metric"><div class="metric-label">Taxa de conversão</div><div class="metric-value blue">${taxa}%</div></div>
+  `;
+  const statusCount = STATUS.map(s=>leads.filter(l=>l.status===s).length);
+  const max = Math.max(...statusCount,1);
+  document.getElementById('bar-status').innerHTML = STATUS.map((s,i)=>`
+    <div class="bar-row">
+      <div class="bar-label">${s}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(statusCount[i]/max*100)}%;background:${BAR_COLORS[i]}"></div></div>
+      <div class="bar-count">${statusCount[i]}</div>
+    </div>`).join('');
+  const origens = [...new Set(leads.map(l=>l.origem))];
+  const origCount = origens.map(o=>leads.filter(l=>l.origem===o).length);
+  const oMax = Math.max(...origCount,1);
+  document.getElementById('bar-origem').innerHTML = origens.map((o,i)=>`
+    <div class="bar-row">
+      <div class="bar-label">${o}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(origCount[i]/oMax*100)}%;background:${BAR_COLORS[i%BAR_COLORS.length]}"></div></div>
+      <div class="bar-count">${origCount[i]}</div>
+    </div>`).join('');
+}
+
+// ---- Config ----
+function saveApiUrl() {
+  const url = document.getElementById('api-url').value.trim();
+  if (!url) return;
+  API_URL = url;
+  localStorage.setItem('crm_api_url', url);
+  document.getElementById('api-status').innerHTML = '<span class="ok">✓ URL salva. Clique em "Testar" para verificar a conexão.</span>';
+}
+
+async function testApi() {
+  const url = document.getElementById('api-url').value.trim();
+  if (!url) { document.getElementById('api-status').innerHTML='<span class="err">Informe a URL primeiro.</span>'; return; }
+  API_URL = url;
+  document.getElementById('api-status').innerHTML = 'Testando...';
+  const data = await apiFetch('GET');
+  if (data && data.leads !== undefined) {
+    document.getElementById('api-status').innerHTML = `<span class="ok">✓ Conectado! ${data.leads.length} leads encontrados na planilha.</span>`;
+    localStorage.setItem('crm_api_url', url);
+    loadLeads();
+  } else {
+    document.getElementById('api-status').innerHTML = `<span class="err">✗ Erro: ${(data&&data.error)||'Não foi possível conectar. Verifique a URL e as permissões.'}</span>`;
+  }
+}
+
+function exportCSV() {
+  const headers = ['ID','Nome','Telefone','Estado','Origem','Interesse','Status'];
+  const rows = leads.map(l=>[l.id,l.nome,l.tel,l.estado,l.origem,l.interesse,l.status].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','),...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = 'leads_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ---- Tabs ----
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-leads').style.display = tab==='leads'?'':'none';
+  document.getElementById('view-dashboard').style.display = tab==='dashboard'?'':'none';
+  document.getElementById('view-config').style.display = tab==='config'?'':'none';
+  if (tab==='dashboard') renderDash();
+  if (tab==='config') {
+    const saved = localStorage.getItem('crm_api_url');
+    if (saved) document.getElementById('api-url').value = saved;
+  }
+}
+
+// ---- Sample data ----
+function getSampleLeads() {
+  return [
+    {id:'s1',nome:'Ana Paula Costa',tel:'(85) 98877-1234',estado:'CE',origem:'Instagram',interesse:'Produto A',status:'Interessado'},
+    {id:'s2',nome:'Bruno Ferreira',tel:'(11) 97766-5678',estado:'SP',origem:'Google',interesse:'Consultoria',status:'Novo'},
+    {id:'s3',nome:'Carla Mendes',tel:'(21) 96655-4321',estado:'RJ',origem:'Indicação',interesse:'Produto B',status:'Contatado'},
+    {id:'s4',nome:'Diego Alves',tel:'(31) 95544-9876',estado:'MG',origem:'Facebook',interesse:'Serviço',status:'Retornar'},
+    {id:'s5',nome:'Eduarda Lima',tel:'(81) 94433-1111',estado:'PE',origem:'WhatsApp',interesse:'Produto A',status:'Não Interessado'},
+  ];
+}
+
+// ---- Init ----
+if (API_URL) document.getElementById('api-url') && (document.getElementById('api-url').value = API_URL);
+loadLeads();
+</script>
+</body>
+</html>
